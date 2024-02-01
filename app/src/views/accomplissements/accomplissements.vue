@@ -35,14 +35,15 @@
 					</ul>
 
 				</v-card>
+				<div v-if="avancements">
+					<br/>
+					<v-btn @click="fermerDémos"
+						flat
+					>
+						{{$t("accomplissements.exercices_démo_non")}}
+					</v-btn>
+				</div>
 			</v-banner-text>
-			<div v-if="avancements">
-				<v-btn @click="fermerDémos"
-					flat
-				>
-					{{$t("accomplissements.exercices_démo_non")}}
-				</v-btn>
-			</div>
 		</v-banner>
 
 		<div v-if="avancements" >
