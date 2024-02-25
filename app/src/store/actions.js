@@ -58,7 +58,7 @@ async function rafraîchirToken() {
 }
 
 function récupérerUsername() {
-	return sessionStorage.getItem("username") || localStorage.getItem("username");
+	return sessionStorage.getItem("username") ?? localStorage.getItem("username");
 }
 
 function récupérerCléSauvegardée() {

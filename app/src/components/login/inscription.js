@@ -95,7 +95,7 @@ export default {
 			}
 		},
 		async proposer_username(){
-			const user = (await getData("https://randomuser.me/api/?format=json&inc=login&noinfo")).results[0].login.username ?? "";
+			const user = (await getData("https://randomuser.me/api/?format=json&inc=login&noinfo", null, null, {withCredentials: false})).results[0].login.username ?? "";
 			if(user != ""){
 				this.username=user;
 			}
