@@ -48,6 +48,7 @@
 				val="LDAP"
 			>
 				<LoginForm
+					v-if="auth_ldap"
 					:domaine="ldap_domaine"
 					:url_mdp_reinit="ldap_url_mdp_reinit"
 					:focus="tabSélectionné=='LDAP'"
@@ -60,6 +61,7 @@
 				val="STANDARD"
 			>
 				<LoginForm @onLogin="onLogin"
+					v-if="auth_local"
 					:focus="tabSélectionné=='STANDARD'"
 				/>
 			</tab-panel>
@@ -69,6 +71,7 @@
 				val="INSCRIPTION"
 			>
 				<Inscription
+					v-if="inscription_locale"
 					:focus="tabSélectionné=='INSCRIPTION'"
 					@onInscrire="onInscrire"
 				/>
