@@ -23,7 +23,7 @@
 						</div>
 					</div>
 				</v-app-bar-title>
-				<div  v-if="username">
+				<div  v-if="user">
 
 					<v-row style="align-items: center">
 						<v-col  class="p-0">
@@ -52,7 +52,7 @@
 			</v-app-bar>
 
 			<BannièreErreur style="width: 75vw" />
-			<NavBar v-if="username"
+			<NavBar v-if="user"
 				@accomplissements="allerVersAccomplissements"
 				@nouvelExercice="nouvelExercice"
 				@basculerThèmeSombre="basculerThèmeSombre"
@@ -108,6 +108,9 @@ export default {
 		this.traiterParamètresURL( window.location.search );
 	},
 	computed: {
+		user() {
+			return this.$store.state.user;
+		},
 		username() {
 			return this.$store.state.username;
 		},
