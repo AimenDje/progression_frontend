@@ -20,7 +20,8 @@
 			}
 		},
 		"tentative_intraitable": "La tentative est intraitable. La question peut être invalide ou avoir changé depuis que vous avez chargé l'ébauche. Essayez de recharger l'ébauche initiale et si le problème persiste, veuillez communiquer avec un administrateur.",
-		"question_introuvable": "La question n'existe pas ou n'a pas pu être récupérée. Si le problème persiste, veuillez aviser l'auteur de la question."
+		"question_introuvable": "La question n'existe pas ou n'a pas pu être récupérée. Si le problème persiste, veuillez aviser l'auteur de la question.",
+		"question_invalide": "La question est invalide. Si vous être le créateur de le question, vérifiez-en la validité grâce à l'outil de validation : https://pypi.org/project/progression-qc"
 	},
 
 	"menu": {

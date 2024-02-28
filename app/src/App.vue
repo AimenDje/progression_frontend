@@ -23,7 +23,7 @@
 						</div>
 					</div>
 				</v-app-bar-title>
-				<div  v-if="$store.getters.obtenirToken()">
+				<div  v-if="username">
 
 					<v-row style="align-items: center">
 						<v-col  class="p-0">
@@ -52,7 +52,7 @@
 			</v-app-bar>
 
 			<BannièreErreur style="width: 75vw" />
-			<NavBar v-if="$store?.getters.obtenirToken()"
+			<NavBar v-if="username"
 				@accomplissements="allerVersAccomplissements"
 				@nouvelExercice="nouvelExercice"
 				@basculerThèmeSombre="basculerThèmeSombre"

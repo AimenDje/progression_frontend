@@ -39,7 +39,7 @@ const router = createRouter({
 	routes,
 });
 
-router.beforeEach( async function(to, from, next ){
+router.beforeEach(async function(to, from, next) {
 	const config = store.getters.configServeur ?? await store.dispatch("récupérerConfigServeur", import.meta.env.VITE_API_URL);
 
 	//Si le user est déjà chargé, continue
@@ -48,42 +48,37 @@ router.beforeEach( async function(to, from, next ){
 		return;
 	}
 
-	const username = store.state.username || sessionStorage.getItem("username") || localStorage.getItem("username");
-	if(!username) {
-		if(pages_sans_connexion.includes(to.name)){
-			next();
+	//Tente la connexion
+	if (config.liens.user) {
+		try {
+			//Charge l'utilisateur et continue
+			await store.dispatch("récupérerUser", config.liens.user);
+			//N'envoie pas au login si l'utilisateur est déjà connecté
+			if (to.name == "LoginView") {
+				next({ name: "Home" });
+			}
+			else {
+				next();
+			}
+			return;
+		} catch(e) {
+			console.log(e);
 		}
-		else {
-			//redirige vers la page de Login
-			next( { name: "LoginView",
-				    query: to.query,
-				    params: { origine: to.fullPath }
-			});
-		}
+	}
+
+	//Pas de connexion nécessaire
+	if (pages_sans_connexion.includes(to.name)) {
+		next();
 		return;
 	}
-
-	//Charge l'utilisateur et continue
-
-	try{
-		await store.dispatch("récupérerUser", config.liens.user);
-		//N'envoie pas au login si l'utilisateur est déjà connecté
-		if( to.name=="LoginView" ) {
-			next( { name:"Home" } );
-		}
-		else {
-			next();
-		}
-	}
-	catch {
-		sessionStorage.removeItem("username");
-		localStorage.removeItem("username");
-
+	else {
 		//redirige vers la page de Login
-		next( { name: "LoginView",
-		        query: to.query,
-		        params: { origine: to.fullPath }
-		      });
+		next({
+			name: "LoginView",
+			query: to.query,
+			params: { origine: to.fullPath }
+		});
+		return;
 	}
 });
 
