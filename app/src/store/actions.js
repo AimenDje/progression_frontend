@@ -204,12 +204,7 @@ export default {
 						config = await getConfigServeurApi(urlConfig, null, username, authKey );
 					}
 					catch(err){
-						if(err.response.status == 400){
-							throw new AuthentificationError("Erreur d'authentification.");
-						}
-						else{
-							throw err;
-						}
+						config = await getConfigServeurApi(urlConfig);
 					}
 				}
 				else{
@@ -283,7 +278,7 @@ export default {
 		commit("setUsername", null);
 		commit("setUser", null);
 		commit("setToken", null);
-		commit("configServeur", null);
+		commit("setConfigServeur", null);
 	},
 
 	async récupérerTokenScore({ commit, state }) {
@@ -374,7 +369,10 @@ export default {
 				return question;
 			}
 			catch (e) {
-				if (e?.response?.status == 502) {
+				if(e?.response?.status == 422){
+					throw i18n.global.t("erreur.question_invalide");
+				}
+				else if (e?.response?.status == 502) {
 					throw i18n.global.t("erreur.question_introuvable");
 				}
 				else {

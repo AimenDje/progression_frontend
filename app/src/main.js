@@ -69,13 +69,14 @@ store.subscribe( (mutation) => {
 app.use(i18n);
 
 const authentificationErreurHandler = function() {
-	store.dispatch("déconnexion");
-	if ( router.currentRoute.value.name != "LoginView" ) {
-		router.push({
-			name: "LoginView",
-			query: window.location.search,
-			params: { origine: window.location.href }});
-	}
+	store.dispatch("déconnexion").then(() => {
+		if (router.currentRoute.value.name != "LoginView") {
+			router.push({
+				name: "LoginView",
+				query: window.location.search,
+				params: { origine: window.location.href }
+			});
+		}});
 };
 
 const valider = async (promesse) => {

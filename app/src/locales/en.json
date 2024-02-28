@@ -20,7 +20,8 @@
 			}
 		},
 		"tentative_intraitable": "The attempt is invalid. The question may be invalid or may have changed since your draft was loaded. Try reloading the initial draft. If the problem persists, contact an administrator.",
-		"question_introuvable": "The question does not exist or could not be retreived. If the problem persists, contact the author of the question."
+		"question_introuvable": "The question does not exist or could not be retreived. If the problem persists, contact the author of the question.",
+		"question_invalide": "The question is invalid. If you are the author, please use this tool for validation : https://pypi.org/project/progression-qc"
 	},
 
 	"menu": {
