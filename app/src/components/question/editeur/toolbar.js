@@ -12,7 +12,7 @@ export default {
 			return this.$store.getters.indicateursDeFonctionnalité("tout_voir");
 		},
 		xray() {
-			return this.$store.getters?.préférences?.xray && this.$store.getters.indicateursDeFonctionnalité("tout_voir");
+			return this.$store.getters.xray && this.$store.getters.indicateursDeFonctionnalité("tout_voir");
 		}
 	},
 	methods: {
