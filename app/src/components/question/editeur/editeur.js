@@ -42,7 +42,7 @@ export default {
 	},
 	computed: {
 		xray() {
-			return this.$store.getters?.préférences?.xray && this.$store.getters.indicateursDeFonctionnalité("tout_voir");
+			return this.$store.getters.xray && this.$store.getters.indicateursDeFonctionnalité("tout_voir");
 		},
 		raccourcis() {
 			return this.$store.getters.raccourcis;

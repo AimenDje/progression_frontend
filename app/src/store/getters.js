@@ -26,4 +26,5 @@ export default {
 	question_type: state => state.question.sous_type == "questionProg" ? "prog" : "sys",
 	résultats: state => state.tentative?.resultats?.map( (x) => x?.résultat ) ?? [],
 	dev: state => state.dev,
+	xray: state => state.user?.préférences["xray"]!==false,
 };

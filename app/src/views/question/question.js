@@ -112,6 +112,7 @@ export default {
 		this.$store.dispatch("réinitialiserErreurs");
 		this.$store.dispatch("setErreurCallback", null);
 		this.traiterParamètresURL(window.location.search);
+		if (!this.question && this.uri && this.user) this.récupérerQuestion();
 	},
 	provide() {
 		return {
