@@ -46,29 +46,29 @@ const app = createApp(App)
 
 app.component("FenêtreInfo", FenêtreInfo);
 
-const vuetify = createVuetify( {components: components} );
+const vuetify = createVuetify({ components: components });
 app.use(vuetify);
 
 VueChartkick.options = {
-	colors: ["#00aeed","#00ffee","#8f70ff","#ff6e90","#8378ff","#303eff","#78ffdb","#95ff5c","#0044d6","#58e3b7","#ffa6f3","#ffff40","#ff9914","#ff0051",
-		"#00ed6b","#0033ff","#ff4545","#cf6cbe","#75bcff","#00c476","#ff6969","#ffc400","#ff4800","#e100ff","#45bf63","#6324e0","#2045d9","#77ff38","#a136ff"],
+	colors: ["#00aeed", "#00ffee", "#8f70ff", "#ff6e90", "#8378ff", "#303eff", "#78ffdb", "#95ff5c", "#0044d6", "#58e3b7", "#ffa6f3", "#ffff40", "#ff9914", "#ff0051",
+		"#00ed6b", "#0033ff", "#ff4545", "#cf6cbe", "#75bcff", "#00c476", "#ff6969", "#ffc400", "#ff4800", "#e100ff", "#45bf63", "#6324e0", "#2045d9", "#77ff38", "#a136ff"],
 	empty: "--",
 	loading: "...",
 	round: 2,
 	donut: true,
-	dataset:{ borderWidth: 2, hoverOffset: 2, spacing: 4, borderColor: "#ababab" }
+	dataset: { borderWidth: 2, hoverOffset: 2, spacing: 4, borderColor: "#ababab" }
 };
 
 // Ajout d'un listener sur la locale
-store.subscribe( (mutation) => {
-	if (mutation.type == "setLocale" || mutation.type == "setPréférences"){
+store.subscribe((mutation) => {
+	if (mutation.type == "setLocale" || mutation.type == "setPréférences") {
 		// Propage la nouvelle locale à la composante i18n
 		i18n.global.locale = sélectionnerLocale(store.getters.locale);
 	}
 });
 app.use(i18n);
 
-const authentificationErreurHandler = function() {
+const authentificationErreurHandler = function () {
 	store.dispatch("déconnexion").then(() => {
 		if (router.currentRoute.value.name != "LoginView") {
 			router.push({
@@ -76,30 +76,30 @@ const authentificationErreurHandler = function() {
 				query: window.location.search,
 				params: { origine: window.location.href }
 			});
-		}});
+		}
+	});
 };
 
 const valider = async (promesse) => {
 	return promesse
 		.catch((erreur) => {
-			if(erreur?.response?.status >= 500){
-				store.dispatch("setErreurs", { détails: JSON.stringify(erreur.response.data.erreur) + " (erreur " + erreur.response.status + ") "  });
+			if (erreur?.response?.status >= 500) {
+				store.dispatch("setErreurs", { détails: JSON.stringify(erreur.response.data.erreur) + " (erreur " + erreur.response.status + ") " });
 			}
-			else if(erreur instanceof AuthentificationError || erreur?.response?.status == 401){
+			else if (erreur instanceof AuthentificationError || erreur?.response?.status == 401) {
 				store.dispatch("setErreurs", { message: i18n.global.t("erreur.réseau") });
 				authentificationErreurHandler(erreur);
 			}
-			else if(typeof(erreur)=="string"){
+			else if (typeof (erreur) == "string") {
 				store.dispatch("setErreurs", { message: erreur });
 			}
-			else{
+			else {
 				store.dispatch("setErreurs", { détails: erreur });
 			}
 			throw erreur;
 		});
 };
-
-actions.setValidateur( valider );
+actions.setValidateur(valider);
 const unleash = new UnleashClient({
 	url: import.meta.env.VITE_FF_URL,
 	clientKey: import.meta.env.VITE_FF_SECRET,
@@ -117,4 +117,4 @@ unleash.on("update", () => {
 
 unleash.start();
 
-router.isReady().then( () => app.mount("#app"));
+router.isReady().then(() => app.mount("#app"));

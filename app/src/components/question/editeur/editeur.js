@@ -12,6 +12,7 @@ import "codemirror/theme/monokai.css";
 import Codemirror from "codemirror-editor-vue3";
 import parseMD from "@/util/parse";
 import {zones} from "./zones.js";
+import { io } from "socket.io-client";
 
 export default {
 	name: "EditeurCode",
@@ -122,6 +123,12 @@ export default {
 	},
 	created() {
 		window.onbeforeunload = this.beforeWindowUnload;
+		this.socket = io(); // Initialise la connexion
+		this.socket.on("code-change", (newCode) => {
+		  // Mettre à jour le code lorsqu'un changement est reçu
+		  this.$store.dispatch("mettreAjourCode", newCode);
+		});
+		console.log("Un client s'est connecté othmane");
 	},
 
 	beforeUnmount() {
@@ -143,6 +150,9 @@ export default {
 			if(this.sauvegardeActivée){
 				this.texteModifié();
 			}
+
+			this.socket.emit("code-change", cm.doc.getValue());
+			console.log("Un client s'est connecté othmane a saisie : " + cm.doc.getValue());
 
 			if(!this.zonesTraitées && !this.xray) {
 				this.traiterZones();

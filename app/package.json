@@ -57,7 +57,12 @@
 		"vue3-tour": "^0.2.0",
 		"vuetify": "^3.4.2",
 		"vuex": "^4.0.0",
-		"word-wrap": "^1.2.3"
+		"word-wrap": "^1.2.3",
+		"socket.io-client": "^4.3.1",
+		"express": "^4.18.2",
+		"nodemon": "^3.0.3",
+		"socketio": "^1.0.0",
+		"global": "^4.4.0"
 	},
 	"devDependencies": {
 		"@testing-library/vue": "^6.4.0",
