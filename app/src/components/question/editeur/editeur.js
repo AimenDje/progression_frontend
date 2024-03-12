@@ -123,12 +123,27 @@ export default {
 	},
 	created() {
 		window.onbeforeunload = this.beforeWindowUnload;
-		this.socket = io(); // Initialise la connexion
-		this.socket.on("code-change", (newCode) => {
-		  // Mettre à jour le code lorsqu'un changement est reçu
-		  this.$store.dispatch("mettreAjourCode", newCode);
+		this.socket = io("http://ordralphabetix.dti.crosemont.quebec:12125");
+
+		this.socket.on("connect", () => {
+		  console.log("Connecté à Socket.IO");
 		});
-		console.log("Un client s'est connecté othmane");
+	
+		this.socket.on("disconnect", () => {
+		  console.log("Déconnecté de Socket.IO");
+		});
+	
+		this.socket.on("codeChange", (codeData) => {
+		  this.cm.setValue(codeData.code);
+		  console.log(
+			"Un client s'est connecté othmane a saisie : ",
+			codeData.code
+		  );
+		});
+
+		this.socket.on("error", (error) => {
+			console.error("Erreur Socket.IO :", error);
+		  });
 	},
 
 	beforeUnmount() {
@@ -152,7 +167,7 @@ export default {
 			}
 
 			this.socket.emit("code-change", cm.doc.getValue());
-			console.log("Un client s'est connecté othmane a saisie : " + cm.doc.getValue());
+			console.log("Othmane a saisie : " + cm.doc.getValue());
 
 			if(!this.zonesTraitées && !this.xray) {
 				this.traiterZones();
