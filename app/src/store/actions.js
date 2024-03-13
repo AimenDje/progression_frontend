@@ -22,6 +22,7 @@ import {
 
 import {i18n, sélectionnerLocale} from "@/util/i18n";
 import {copie_profonde, AuthentificationError} from "@/util/commun.js";
+import {lock} from "@/util/lock";
 import jwt_decode from "jwt-decode";
 import store from "./store.js";
 
@@ -40,11 +41,7 @@ async function rafraîchirToken() {
 	if (username && authKey) {
 		try {
 			const lien_tokens = store.getters.user?.liens?.tokens ?? store.getters.configServeur?.liens?.tokens;
-			if(lien_tokens){
-				const token = await getTokenApi(lien_tokens, username, authKey);
-				return token;
-			}
-			return null;
+			return lien_tokens ? await getTokenApi(lien_tokens, username, authKey) : null;
 		}
 		catch(err) {
 			console.log(err);
@@ -174,15 +171,17 @@ export default {
 	},
 
 	async getToken({ commit, getters }) {
-		const token = getters.obtenirToken();
-		if(token) return token;
-
-		try {
-			const token = await rafraîchirToken();
-			commit("setToken", token);
-			return token;
+		try{
+			return await lock( "token", async () => {
+				var token = getters.obtenirToken();
+				if(!token){
+					token = await rafraîchirToken();
+					commit("setToken", token);
+				}
+				return token;
+			});
 		}
-		catch(e) {
+		catch (e) {
 			commit("setToken", null);
 			throw e;
 		}
