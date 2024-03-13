@@ -11,8 +11,8 @@ import "codemirror/lib/codemirror.css";
 import "codemirror/theme/monokai.css";
 import Codemirror from "codemirror-editor-vue3";
 import parseMD from "@/util/parse";
-import {zones} from "./zones.js";
-import { io } from "socket.io-client";
+import { zones } from "./zones.js";
+import io from "socket.io-client";
 
 export default {
 	name: "EditeurCode",
@@ -26,18 +26,20 @@ export default {
 			sauvegardeAutomatique: null,
 			zonesTraitées: false,
 			cm: null,
+			socket: null,
+			changementDuServeur: false
 		};
 	},
 	watch: {
 		xray() {
-			if(!this.xray){
+			if (!this.xray) {
 				this.traiterZones();
 			}
 			else {
 				this.cm.setValue(this.cm.getValue());
 			}
 		},
-		tentative(){
+		tentative() {
 			this.zonesTraitées = false;
 		}
 	},
@@ -64,8 +66,8 @@ export default {
 		code() {
 			return this.$store.state.tentative.code;
 		},
-		thème(){
-			return this.$store.getters.thèmeSombre?"monokai":"default";
+		thème() {
+			return this.$store.getters.thèmeSombre ? "monokai" : "default";
 		},
 		ebauches() {
 			return this.$store.state.question.ebauches ?? [];
@@ -104,7 +106,7 @@ export default {
 		},
 		tentative() {
 			let tentative = this.$store.state.tentative;
-			
+
 			return tentative ? new Proxy(tentative, {
 				get: function (obj, prop) {
 					return prop == "feedback" ? parseMD(obj[prop]) : obj[prop];
@@ -123,75 +125,91 @@ export default {
 	},
 	created() {
 		window.onbeforeunload = this.beforeWindowUnload;
-		this.socket = io("http://ordralphabetix.dti.crosemont.quebec:12125");
+
+		this.socket = io("http://ordralphabetix.dti.crosemont.quebec:12125", {
+			transports: ['websocket', 'polling']
+		});
+
+
+		this.socket.on("connect_error", (err) => {
+			// the reason of the error, for example "xhr poll error"
+			console.log(err);
+		});
 
 		this.socket.on("connect", () => {
-		  console.log("Connecté à Socket.IO");
+			console.log("Connecté à Socket.IO");
 		});
-	
+
 		this.socket.on("disconnect", () => {
-		  console.log("Déconnecté de Socket.IO");
-		});
-	
-		this.socket.on("codeChange", (codeData) => {
-		  this.cm.setValue(codeData.code);
-		  console.log(
-			"Un client s'est connecté othmane a saisie : ",
-			codeData.code
-		  );
+			console.log("Déconnecté de Socket.IO");
 		});
 
 		this.socket.on("error", (error) => {
 			console.error("Erreur Socket.IO :", error);
-		  });
-	},
+		});
 
+		this.socket.on("codeChange", (codeData) => {
+			this.changementDuServeur = true;
+			const currentValue = this.cm.getValue();
+			if (currentValue !== codeData.code) {
+			  this.cm.setValue(codeData.code);
+			  console.log("Othmane a saisie : " + codeData.code);
+			}
+			console.log("Mise à jour du code par Socket.IO");
+			this.changementDuServeur = false;
+		});
+
+	},
 	beforeUnmount() {
 		this.sauvegarder();
 		window.removeEventListener("beforeunload", this.beforeWindowUnload);
 	},
 	methods: {
-		onReady( cm ){
-			cm.on("beforeChange",  this.onBeforeChange);
-			cm.on("change",  this.onChange);
-			cm.on("beforeSelectionChange",  this.onBeforeSelectionChange);
+		onReady(cm) {
+			cm.on("beforeChange", this.onBeforeChange);
+			cm.on("change", this.onChange);
+			cm.on("beforeSelectionChange", this.onBeforeSelectionChange);
 			this.cm = cm;
-			if(!this.xray){
+			if (!this.xray) {
 				this.traiterZones();
 			}
 		},
-		onChange( cm, changeObj ){
+		onChange(cm, changeObj) {
 			this.$store.dispatch("mettreAjourCode", cm.doc.getValue());
-			if(this.sauvegardeActivée){
+			if (this.sauvegardeActivée) {
 				this.texteModifié();
 			}
 
-			this.socket.emit("code-change", cm.doc.getValue());
-			console.log("Othmane a saisie : " + cm.doc.getValue());
+			if (!this.changementDuServeur) {
+				this.socket.emit("codeChange", { code: cm.doc.getValue() });
+			}
 
-			if(!this.zonesTraitées && !this.xray) {
+			this.changementDuServeur = false;
+
+			if (!this.zonesTraitées && !this.xray) {
 				this.traiterZones();
 				this.zonesTraitées = true;
 			}
 
-			const marks = cm.doc.findMarksAt( changeObj.from );
-			if ( marks.length === 0 ) return;
+			const marks = cm.doc.findMarksAt(changeObj.from);
+			if (marks.length === 0) return;
 			const mark = marks[0];
-			if ( mark.lines.length === 0 ) return;
+			if (mark.lines.length === 0) return;
 
 			// Enlève la ou les premières espaces
 			const ligne = mark.lines[0];
-			if(ligne.text.indexOf("+TODO ") > 0 &&
-			   ligne.text.indexOf("-TODO") > 0 ) {
+			if (ligne.text.indexOf("+TODO ") > 0 &&
+				ligne.text.indexOf("-TODO") > 0) {
 				const range = mark.find();
-				const matches = ligne.text.match( /(?<=\+TODO)(.+?)(?=-TODO)/ );
-				if ( !matches ) return;
+				const matches = ligne.text.match(/(?<=\+TODO)(.+?)(?=-TODO)/);
+				if (!matches) return;
 				const remplacement = matches[1];
-				if(remplacement.trim()!="" && remplacement.trim() !== remplacement){
-					cm.doc.replaceRange( remplacement.trim(), range.from, range.to );
+				if (remplacement.trim() != "" && remplacement.trim() !== remplacement) {
+					cm.doc.replaceRange(remplacement.trim(), range.from, range.to);
 				}
 			}
 		},
+
 
 		onBeforeChange(cm, changeObj) {
 			var markers = cm.doc.findMarksAt(changeObj.from);
@@ -200,68 +218,68 @@ export default {
 			const mark = markers[0].find();
 
 			// Si on a inséré un \n dans un todo en ligne
-			if(mark.from.line == mark.to.line && changeObj.origin =="+input" && changeObj.text.join("") == "" ){
+			if (mark.from.line == mark.to.line && changeObj.origin == "+input" && changeObj.text.join("") == "") {
 				changeObj.cancel();
 				return;
 			}
 
 			// Si la zone marquée a été effacée
-			if( mark.from.line == changeObj.from.line
-			    && mark.to.line == changeObj.to.line
-			    && mark.from.ch == changeObj.from.ch
-			    && mark.to.ch == changeObj.to.ch
-			    && changeObj.text == "" ) {
-				changeObj.update( mark.from, mark.to, " " );
+			if (mark.from.line == changeObj.from.line
+				&& mark.to.line == changeObj.to.line
+				&& mark.from.ch == changeObj.from.ch
+				&& mark.to.ch == changeObj.to.ch
+				&& changeObj.text == "") {
+				changeObj.update(mark.from, mark.to, " ");
 			}
 		},
 
-		onBeforeSelectionChange(cm, changeObj){
-			if(changeObj.ranges.length==0) return;
-			const ranges = changeObj.ranges.filter( r => r.anchor!=r.head );
-			var n_ranges=[];
-			ranges.forEach( range => {
-				const markers = cm.doc.findMarks( range.anchor, range.head );
-				n_ranges.push(...this.rogner(range, markers ));
+		onBeforeSelectionChange(cm, changeObj) {
+			if (changeObj.ranges.length == 0) return;
+			const ranges = changeObj.ranges.filter(r => r.anchor != r.head);
+			var n_ranges = [];
+			ranges.forEach(range => {
+				const markers = cm.doc.findMarks(range.anchor, range.head);
+				n_ranges.push(...this.rogner(range, markers));
 			});
 
-			if(n_ranges.length>0)
-				changeObj.update( n_ranges );
-			else{
-				changeObj.update( [changeObj.ranges[0]] );
+			if (n_ranges.length > 0)
+				changeObj.update(n_ranges);
+			else {
+				changeObj.update([changeObj.ranges[0]]);
 			}
 		},
 
-		rogner( range, markers ){
+		rogner(range, markers) {
 			var ranges = [];
 			var début = range.anchor;
 			var marques = [];
 			var pile = [];
 
-			markers.forEach( m => {
-				if (m.readonly || m.collapsed){
+			markers.forEach(m => {
+				if (m.readonly || m.collapsed) {
 					const marker = m.find();
-					marques.push( {...marker.from, type: "début"} );
-					marques.push( {...marker.to, type: "fin"} );
+					marques.push({ ...marker.from, type: "début" });
+					marques.push({ ...marker.to, type: "fin" });
 				}
 			});
-			marques.sort( (a,b) => a.line-b.line || a.ch-b.ch || a.type > b.type );
-			marques.forEach( marker => {
-				if(marker.type=="début"){
-					if(pile.length==0 && début!=null){
-						ranges.push( {anchor: début, head: marker } );
-						début=null;
+			marques.sort((a, b) => a.line - b.line || a.ch - b.ch || a.type > b.type);
+			marques.forEach(marker => {
+				if (marker.type == "début") {
+					if (pile.length == 0 && début != null) {
+						ranges.push({ anchor: début, head: marker });
+						début = null;
 					}
-					pile.push( marker );
+					pile.push(marker);
 				}
-				else{
+				else {
 					pile.pop();
-					if(pile.length==0)
+					if (pile.length == 0)
 						début = marker;
 				}
 			});
 
-			if(début!=null)
-				ranges.push( {anchor: début, head: range.head } );
+			if (début != null)
+				ranges.push({ anchor: début, head: range.head });
 
 			return ranges;
 		},
@@ -272,17 +290,17 @@ export default {
 
 		traiterZones() {
 			zones.cacherHorsVisible(this.cm.doc);
-			zones.désactiverHorsTodo(this.cm.doc, this.$store.getters.thèmeSombre?"#272822":"white");
+			zones.désactiverHorsTodo(this.cm.doc, this.$store.getters.thèmeSombre ? "#272822" : "white");
 		},
 
 		async sauvegarder() {
 			if (this.indicateurModifié && !this.indicateurSauvegardeEnCours) {
 				this.indicateurSauvegardeEnCours = true;
-				try{
+				try {
 					await this.$store.dispatch("mettreAjourSauvegarde");
 					this.indicateurModifié = false;
 				}
-				catch(erreur) {
+				catch (erreur) {
 					console.log("ERREUR de sauvegarde : " + erreur);
 				}
 				finally {
