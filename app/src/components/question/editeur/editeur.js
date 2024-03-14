@@ -27,7 +27,9 @@ export default {
 			zonesTraitées: false,
 			cm: null,
 			socket: null,
-			changementDuServeur: false
+			changementDuServeur: false,
+			userCursors: {},
+			cursorWidgets: {},
 		};
 	},
 	watch: {
@@ -124,7 +126,6 @@ export default {
 		}
 	},
 	created() {
-		window.onbeforeunload = this.beforeWindowUnload;
 
 		this.socket = io("http://ordralphabetix.dti.crosemont.quebec:12125", {
 			transports: ['websocket', 'polling']
@@ -132,7 +133,6 @@ export default {
 
 
 		this.socket.on("connect_error", (err) => {
-			// the reason of the error, for example "xhr poll error"
 			console.log(err);
 		});
 
@@ -150,13 +150,45 @@ export default {
 
 		this.socket.on("codeChange", (codeData) => {
 			this.changementDuServeur = true;
+			const currentPosition = this.cm.getCursor();
 			const currentValue = this.cm.getValue();
 			if (currentValue !== codeData.code) {
-			  this.cm.setValue(codeData.code);
-			  console.log("Othmane a saisie : " + codeData.code);
+				this.cm.setValue(codeData.code);
+				this.cm.setCursor(currentPosition);
+				console.log("Othmane a saisie : " + codeData.code);
 			}
 			console.log("Mise à jour du code par Socket.IO");
 			this.changementDuServeur = false;
+		});
+
+		this.socket.on("requestUsername", () => {
+			const username = prompt("Entrez votre nom d'utilisateur :");
+			this.socket.emit("sendUsername", username);
+		});
+
+		this.socket.on("updateUsers", (users) => {
+			console.log(users);
+			const updatedUserIds = Object.keys(users);
+
+			Object.keys(this.userCursors).forEach(userId => {
+				if (!updatedUserIds.includes(userId)) {
+					this.removeCursor(userId);
+					delete this.userCursors[userId];
+				}
+			});
+			this.userCursors = { ...updatedUsers };
+			this.updateCursors();
+		});
+		this.socket.on("cursorUpdate", (data) => {
+			this.userCursors = {
+				...this.userCursors,
+				[data.userId]: {
+					cursor: data.cursor,
+					color: data.color,
+					name: data.name
+				}
+			};
+			this.updateCursors();
 		});
 
 	},
@@ -173,6 +205,10 @@ export default {
 			if (!this.xray) {
 				this.traiterZones();
 			}
+			cm.on('cursorActivity', (instance) => {
+				const cursor = instance.getCursor();
+				this.socket.emit('cursorMove', { cursor: { line: cursor.line, ch: cursor.ch }, userId: 'VotreUserId' });
+			});
 		},
 		onChange(cm, changeObj) {
 			this.$store.dispatch("mettreAjourCode", cm.doc.getValue());
@@ -196,7 +232,6 @@ export default {
 			const mark = marks[0];
 			if (mark.lines.length === 0) return;
 
-			// Enlève la ou les premières espaces
 			const ligne = mark.lines[0];
 			if (ligne.text.indexOf("+TODO ") > 0 &&
 				ligne.text.indexOf("-TODO") > 0) {
@@ -216,14 +251,11 @@ export default {
 			if (markers.length === 0) return;
 
 			const mark = markers[0].find();
-
-			// Si on a inséré un \n dans un todo en ligne
+			if (!mark || !mark.from || !mark.to) return;
 			if (mark.from.line == mark.to.line && changeObj.origin == "+input" && changeObj.text.join("") == "") {
 				changeObj.cancel();
 				return;
 			}
-
-			// Si la zone marquée a été effacée
 			if (mark.from.line == changeObj.from.line
 				&& mark.to.line == changeObj.to.line
 				&& mark.from.ch == changeObj.from.ch
@@ -318,6 +350,49 @@ export default {
 					, import.meta.env.VITE_DELAI_SAUVEGARDE);
 
 				this.indicateurModifié = true;
+			}
+		},
+
+		updateCursors() {
+			//if (!this.cm) return;
+			Object.entries(this.userCursors).forEach(([userId, userCursor]) => {
+				const { cursor, color, name } = userCursor;
+				if (!cursor || cursor.line === undefined) return;
+
+				const cursorPos = { line: cursor.line, ch: cursor.ch };
+				if (!this.cursorWidgets[userId]) {
+					const cursorEl = this.createCursorElement(color, name);
+					this.cursorWidgets[userId] = this.cm.setBookmark(cursorPos, { widget: cursorEl, insertLeft: true });
+				} else {
+					this.cursorWidgets[userId].clear();
+					delete this.cursorWidgets[userId];
+					const newCursorEl = this.createCursorElement(color, name);
+					this.cursorWidgets[userId] = this.cm.setBookmark({ line: cursor.line, ch: cursor.ch }, { widget: newCursorEl, insertLeft: true });
+				}
+			});
+		},
+
+		createCursorElement(color, name) {
+			const cursorEl = document.createElement('span');
+			cursorEl.style.borderLeft = `2px solid ${color}`;
+			cursorEl.className = 'user-cursor';
+
+			const label = document.createElement('span');
+			label.textContent = ` ${name}`;
+			label.style.color = color;
+			label.style.fontSize = '0.75rem';
+			label.style.marginLeft = '5px';
+			label.style.position = 'absolute';
+			label.style.whiteSpace = 'nowrap';
+
+			cursorEl.appendChild(label);
+
+			return cursorEl;
+		},
+		removeCursor(userId) {
+			if (this.cursorWidgets[userId]) {
+				this.cursorWidgets[userId].clear();
+				delete this.cursorWidgets[userId];
 			}
 		},
 	},
