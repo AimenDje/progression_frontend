@@ -126,7 +126,6 @@ export default {
 		}
 	},
 	created() {
-
 		this.socket = io("http://ordralphabetix.dti.crosemont.quebec:12125", {
 			transports: ['websocket', 'polling']
 		});
@@ -244,8 +243,7 @@ export default {
 				}
 			}
 		},
-
-
+		
 		onBeforeChange(cm, changeObj) {
 			var markers = cm.doc.findMarksAt(changeObj.from);
 			if (markers.length === 0) return;
@@ -376,7 +374,6 @@ export default {
 			const cursorEl = document.createElement('span');
 			cursorEl.style.borderLeft = `2px solid ${color}`;
 			cursorEl.className = 'user-cursor';
-
 			const label = document.createElement('span');
 			label.textContent = ` ${name}`;
 			label.style.color = color;
@@ -384,11 +381,10 @@ export default {
 			label.style.marginLeft = '5px';
 			label.style.position = 'absolute';
 			label.style.whiteSpace = 'nowrap';
-
 			cursorEl.appendChild(label);
-
 			return cursorEl;
 		},
+
 		removeCursor(userId) {
 			if (this.cursorWidgets[userId]) {
 				this.cursorWidgets[userId].clear();
