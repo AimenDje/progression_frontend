@@ -17,6 +17,7 @@ export default {
 	methods: {
 		validerTentative() {
 			this.$store.dispatch("soumettreTentative", false );
-		},
+		}, 
 	}
+	
 };
