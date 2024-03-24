@@ -289,7 +289,7 @@ export default {
 			}
 		},
 		startTogetherJS() {
-			this.buttonCollab = this.buttonCollab === 'Collaborer' ? 'Arrêter Collab' : 'Collaborer';
+			this.buttonCollab = this.buttonCollab === 'Collaborer' ? 'Arrêter Collaboration' : 'Collaborer';
 			if (window.TogetherJS) {
 				window.TogetherJS(this);
 			} else {
