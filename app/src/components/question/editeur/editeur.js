@@ -160,17 +160,8 @@ export default {
 			console.error("Erreur Socket.IO :", error);
 		});
 
-		this.socket.on("codeChange", (codeData) => {
-			this.changementDuServeur = true;
-			const currentPosition = this.cm.getCursor();
-			const currentValue = this.cm.getValue();
-			if (currentValue !== codeData.code) {
-				this.cm.setValue(codeData.code);
-				this.cm.setCursor(currentPosition);
-				console.log("Othmane a saisie : " + codeData.code);
-			}
-			console.log("Mise à jour du code par Socket.IO");
-			this.changementDuServeur = false;
+		this.socket.on("codeChange", (update) => {
+			this.applyCodeChange(update);
 		});
 
 		this.socket.on("updateUsers", (users) => {
@@ -210,6 +201,23 @@ export default {
 		window.removeEventListener("beforeunload", this.beforeWindowUnload);
 	},
 	methods: {
+		applyCodeChange(update) {
+			this.changementDuServeur = true;
+			const { text, start, end } = update;
+		
+			if (!start || !end) {
+			  console.error('Objets "start" ou "end" non définis', start, end);
+			  return;
+			}
+		
+			const currentCursor = this.cm.getCursor();
+			this.cm.replaceRange(text, start, end);
+			this.cm.setCursor(currentCursor);
+			
+			this.$nextTick(() => {
+			  this.changementDuServeur = false;
+			});
+		  },
 		onReady(cm) {
 			cm.on("beforeChange", this.onBeforeChange);
 			cm.on("change", this.onChange);
@@ -226,11 +234,13 @@ export default {
 				this.texteModifié();
 			}
 
-			if (!this.changementDuServeur) {
-				if (this.estEnCollaboration && this.salleId) {
-					this.emitCodeChange(cm.doc.getValue());
-				}
-			}
+			if (!this.changementDuServeur && changeObj.origin !== 'setValue') {
+				const start = changeObj.from;
+				const end = changeObj.to;
+				const text = changeObj.text.join('\n');
+		  
+				this.socket.emit('codeChange', { text, start, end, salleId: this.salleId });
+			  }
 
 			this.changementDuServeur = false;
 
@@ -406,8 +416,8 @@ export default {
 			if (this.cursorWidgets[userId]) {
 				this.cursorWidgets[userId].clear();
 				delete this.cursorWidgets[userId];
-				delete this.userCursors[userId]; 
-				this.updateCursors(); 
+				delete this.userCursors[userId];
+				this.updateCursors();
 			}
 		},
 		activerCollaboration() {
