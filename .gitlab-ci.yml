@@ -38,6 +38,8 @@ test_unitaires:
   needs:
     - job: const_image
       optional: true
+  variables:
+    ENV_FILE: env.exemple
   script:
     - TAG_DEPLOY=$BRANCHE docker-compose run tests_webapp
   except:
@@ -51,7 +53,10 @@ linter:
   stage: test
   needs:
     - job: const_image
-      optional: true
+      optional: true  
+  variables:
+    ENV_FILE: env.exemple
+
   script:
     - TAG_DEPLOY=$BRANCHE docker-compose run linter
   except:
