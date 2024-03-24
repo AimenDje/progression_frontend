@@ -3,7 +3,7 @@
 		v-shortkey=raccourcis.sauvegarde
 		@shortkey="sauvegarder"
 	>
-		<v-btn @click="startTogetherJS" color="primary">Collaborer</v-btn>
+		<v-btn @click="startTogetherJS" color="primary">{{ buttonCollab }}</v-btn>
 		<div
 			class="indicateur_sauvegarde"
 		>

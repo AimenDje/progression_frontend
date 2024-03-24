@@ -25,6 +25,7 @@ export default {
 			sauvegardeAutomatique: null,
 			zonesTraitées: false,
 			cm: null,
+			buttonCollab: 'Collaborer',
 		};
 	},
 	watch: {
@@ -288,6 +289,7 @@ export default {
 			}
 		},
 		startTogetherJS() {
+			this.buttonCollab = this.buttonCollab === 'Collaborer' ? 'Arrêter Collab' : 'Collaborer';
 			if (window.TogetherJS) {
 				window.TogetherJS(this);
 			} else {
