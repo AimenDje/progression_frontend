@@ -18,7 +18,7 @@ export default {
 	watch : {
 		focus(){
 			if(this.focus){
-				this.$refs.identifiant.focus();
+				this.$nextTick(this.$refs.identifiant.focus);
 			}
 		},
 		username(){
@@ -27,7 +27,7 @@ export default {
 	},
 	mounted(){
 		if(this.focus){
-			this.$refs.identifiant.focus();
+			this.$nextTick(this.$refs.identifiant.focus);
 		}
 		this.identifiant = this.username ?? "";
 	},

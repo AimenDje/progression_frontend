@@ -40,7 +40,7 @@ export default {
 			if(this.focus){
 				const champ = this.auth_local ? this.$refs.courriel : this.$refs.identifiant;
 				if(!champ.focused)
-					champ.focus();
+					this.$nextTick(champ.focus);
 			}
 		}
 	},
@@ -49,7 +49,7 @@ export default {
 		if(this.focus){
 			const champ = this.auth_local ? this.$refs.courriel : this.$refs.identifiant;
 			if(!champ.focused)
-				champ.focus();
+				this.$nextTick(champ.focus);
 		}
 	},
 	methods: {

@@ -11,11 +11,21 @@
 			:message="$t('validationCourriel.échouée')"
 			@onRéponse="onRéponse"
 		/>
-		<Login
-			@onLogin="onLogin"
-			@onInscrire="onInscrire"
-			:ongletSélectionné="ongletSélectionné"
-		/>
+		<v-container>
+			<v-row>
+				<v-col
+					cols="12"
+					xs="6"
+					sm="8"
+					md="10">
+					<Login
+						@onLogin="onLogin"
+						@onInscrire="onInscrire"
+						:ongletSélectionné="ongletSélectionné"
+					/>
+				</v-col>
+			</v-row>
+		</v-container>
 	</div>
 </template>
 

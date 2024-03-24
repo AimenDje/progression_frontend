@@ -7,7 +7,6 @@ import { i18n, sélectionnerLocale } from "./util/i18n";
 import { AuthentificationError } from "./util/commun";
 import "bootstrap";
 import "bootstrap/dist/css/bootstrap.css";
-import Tabs from "vue3-tabs";
 import { createMetaManager, plugin as metaPlugin } from "vue-meta";
 import FenêtreInfo from "@/components/layouts/fenetre_info.vue";
 import { plugin as VueTippy } from "vue-tippy";
@@ -35,7 +34,6 @@ const app = createApp(App)
 		component: "Tippy",
 		defaultProps: { placement: "bottom" },
 	})
-	.use(Tabs)
 	.use(createMetaManager())
 	.use(metaPlugin)
 	.use(Vue3Tour)
