@@ -12,7 +12,6 @@ import "codemirror/theme/monokai.css";
 import Codemirror from "codemirror-editor-vue3";
 import parseMD from "@/util/parse";
 import { zones } from "./zones.js";
-import io from "socket.io-client";
 
 export default {
 	name: "EditeurCode",
@@ -26,8 +25,6 @@ export default {
 			sauvegardeAutomatique: null,
 			zonesTraitées: false,
 			cm: null,
-			socket: null,
-			changementDuServeur: false
 		};
 	},
 	watch: {
@@ -125,41 +122,18 @@ export default {
 	},
 	created() {
 		window.onbeforeunload = this.beforeWindowUnload;
-
-		this.socket = io("http://ordralphabetix.dti.crosemont.quebec:12125", {
-			transports: ['websocket', 'polling']
-		});
-
-
-		this.socket.on("connect_error", (err) => {
-			// the reason of the error, for example "xhr poll error"
-			console.log(err);
-		});
-
-		this.socket.on("connect", () => {
-			console.log("Connecté à Socket.IO");
-		});
-
-		this.socket.on("disconnect", () => {
-			console.log("Déconnecté de Socket.IO");
-		});
-
-		this.socket.on("error", (error) => {
-			console.error("Erreur Socket.IO :", error);
-		});
-
-		this.socket.on("codeChange", (codeData) => {
-			this.changementDuServeur = true;
-			const currentValue = this.cm.getValue();
-			if (currentValue !== codeData.code) {
-			  this.cm.setValue(codeData.code);
-			  console.log("Othmane a saisie : " + codeData.code);
-			}
-			console.log("Mise à jour du code par Socket.IO");
-			this.changementDuServeur = false;
-		});
-
 	},
+
+	mounted() {
+		window.TogetherJSConfig_hubBase = "https://togetherjs-hub.glitch.me";
+		let script = document.createElement('script');
+		script.src = "https://togetherjs.com/togetherjs-min.js";
+		script.onload = () => {
+			console.log("TogetherJS est chargé et configuré pour utiliser le serveur personnalisé.");
+		};
+		document.head.appendChild(script);
+	},
+
 	beforeUnmount() {
 		this.sauvegarder();
 		window.removeEventListener("beforeunload", this.beforeWindowUnload);
@@ -179,12 +153,6 @@ export default {
 			if (this.sauvegardeActivée) {
 				this.texteModifié();
 			}
-
-			if (!this.changementDuServeur) {
-				this.socket.emit("codeChange", { code: cm.doc.getValue() });
-			}
-
-			this.changementDuServeur = false;
 
 			if (!this.zonesTraitées && !this.xray) {
 				this.traiterZones();
@@ -209,7 +177,6 @@ export default {
 				}
 			}
 		},
-
 
 		onBeforeChange(cm, changeObj) {
 			var markers = cm.doc.findMarksAt(changeObj.from);
@@ -320,5 +287,12 @@ export default {
 				this.indicateurModifié = true;
 			}
 		},
+		startTogetherJS() {
+			if (window.TogetherJS) {
+				window.TogetherJS(this);
+			} else {
+				console.error("TogetherJS n'est pas encore chargé.");
+			}
+		}
 	},
 };
