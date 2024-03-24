@@ -30,6 +30,8 @@ export default {
 			changementDuServeur: false,
 			userCursors: {},
 			cursorWidgets: {},
+			salleId: '',
+			estEnCollaboration: false,
 		};
 	},
 	watch: {
@@ -137,6 +139,17 @@ export default {
 
 		this.socket.on("connect", () => {
 			console.log("Connecté à Socket.IO");
+			const username = this.$store.state.username;
+			if (username) {
+				this.socket.emit("sendUsername", username);
+			} else {
+				console.error("Nom d'utilisateur non trouvé dans le store");
+			}
+		});
+
+		this.socket.on("userLeft", (data) => {
+			this.removeCursor(data.userId);
+			this.updateCursors();
 		});
 
 		this.socket.on("disconnect", () => {
@@ -160,11 +173,6 @@ export default {
 			this.changementDuServeur = false;
 		});
 
-		this.socket.on("requestUsername", () => {
-			const username = prompt("Entrez votre nom d'utilisateur :");
-			this.socket.emit("sendUsername", username);
-		});
-
 		this.socket.on("updateUsers", (users) => {
 			console.log(users);
 			const updatedUserIds = Object.keys(users);
@@ -175,7 +183,7 @@ export default {
 					delete this.userCursors[userId];
 				}
 			});
-			this.userCursors = { ...updatedUsers };
+			this.userCursors = { users };
 			this.updateCursors();
 		});
 		this.socket.on("cursorUpdate", (data) => {
@@ -188,6 +196,12 @@ export default {
 				}
 			};
 			this.updateCursors();
+		});
+
+		this.socket.on("reconnect", () => {
+			if (this.estEnCollaboration && this.salleId) {
+				this.socket.emit("rejoindreSalle", { salleId: this.salleId, username: this.$store.state.username });
+			}
 		});
 
 	},
@@ -204,10 +218,7 @@ export default {
 			if (!this.xray) {
 				this.traiterZones();
 			}
-			cm.on('cursorActivity', (instance) => {
-				const cursor = instance.getCursor();
-				this.socket.emit('cursorMove', { cursor: { line: cursor.line, ch: cursor.ch }, userId: 'VotreUserId' });
-			});
+			cm.on('cursorActivity', this.onCursorActivity);
 		},
 		onChange(cm, changeObj) {
 			this.$store.dispatch("mettreAjourCode", cm.doc.getValue());
@@ -216,7 +227,9 @@ export default {
 			}
 
 			if (!this.changementDuServeur) {
-				this.socket.emit("codeChange", { code: cm.doc.getValue() });
+				if (this.estEnCollaboration && this.salleId) {
+					this.emitCodeChange(cm.doc.getValue());
+				}
 			}
 
 			this.changementDuServeur = false;
@@ -243,7 +256,14 @@ export default {
 				}
 			}
 		},
-		
+
+		onCursorActivity() {
+			const cursor = this.cm.getCursor();
+			if (this.estEnCollaboration && this.salleId) {
+				this.emitCursorMove({ line: cursor.line, ch: cursor.ch });
+			}
+		},
+
 		onBeforeChange(cm, changeObj) {
 			var markers = cm.doc.findMarksAt(changeObj.from);
 			if (markers.length === 0) return;
@@ -352,23 +372,20 @@ export default {
 		},
 
 		updateCursors() {
-			//if (!this.cm) return;
 			Object.entries(this.userCursors).forEach(([userId, userCursor]) => {
 				const { cursor, color, name } = userCursor;
 				if (!cursor || cursor.line === undefined) return;
 
-				const cursorPos = { line: cursor.line, ch: cursor.ch };
-				if (!this.cursorWidgets[userId]) {
-					const cursorEl = this.createCursorElement(color, name);
-					this.cursorWidgets[userId] = this.cm.setBookmark(cursorPos, { widget: cursorEl, insertLeft: true });
-				} else {
+				if (this.cursorWidgets[userId]) {
 					this.cursorWidgets[userId].clear();
 					delete this.cursorWidgets[userId];
-					const newCursorEl = this.createCursorElement(color, name);
-					this.cursorWidgets[userId] = this.cm.setBookmark({ line: cursor.line, ch: cursor.ch }, { widget: newCursorEl, insertLeft: true });
 				}
+
+				const cursorElement = this.createCursorElement(color, name);
+				this.cursorWidgets[userId] = this.cm.setBookmark({ line: cursor.line, ch: cursor.ch }, { widget: cursorElement, insertLeft: true });
 			});
 		},
+
 
 		createCursorElement(color, name) {
 			const cursorEl = document.createElement('span');
@@ -389,7 +406,44 @@ export default {
 			if (this.cursorWidgets[userId]) {
 				this.cursorWidgets[userId].clear();
 				delete this.cursorWidgets[userId];
+				delete this.userCursors[userId]; 
+				this.updateCursors(); 
 			}
+		},
+		activerCollaboration() {
+			const salleId = prompt("Entrez l'ID de la salle pour collaborer:");
+			if (salleId) {
+				const username = this.$store.state.username;
+				this.socket.emit("sendUsername", username);
+				this.socket.emit("requestUsername");
+				this.resetCollaborationState();
+				this.salleId = salleId;
+				this.estEnCollaboration = true;
+				this.socket.emit("rejoindreSalle", { salleId, username: this.$store.state.username });
+			}
+		},
+		arreterCollaboration() {
+			if (this.estEnCollaboration) {
+				this.socket.emit("quitterSalle", { salleId: this.salleId, username: this.$store.state.username });
+				this.resetCollaborationState();
+				this.estEnCollaboration = false;
+				this.salleId = '';
+			}
+		},
+		emitCodeChange(code) {
+			if (this.estEnCollaboration && this.salleId) {
+				this.socket.emit('codeChange', { code, salleId: this.salleId });
+			}
+		},
+		emitCursorMove(cursor) {
+			if (this.estEnCollaboration && this.salleId) {
+				this.socket.emit('cursorMove', { cursor, salleId: this.salleId, userId: this.$store.state.username });
+			}
+		},
+		resetCollaborationState() {
+			Object.values(this.cursorWidgets).forEach(widget => widget.clear());
+			this.cursorWidgets = {};
+			this.userCursors = {};
 		},
 	},
 };

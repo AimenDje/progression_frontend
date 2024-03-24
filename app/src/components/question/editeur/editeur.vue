@@ -3,6 +3,8 @@
 		v-shortkey=raccourcis.sauvegarde
 		@shortkey="sauvegarder"
 	>
+		<v-btn @click="activerCollaboration" v-if="!estEnCollaboration">Activer la Collaboration</v-btn>
+  		<v-btn @click="arreterCollaboration" v-if="estEnCollaboration">Arrêter la Collaboration</v-btn>
 		<div
 			class="indicateur_sauvegarde"
 		>
